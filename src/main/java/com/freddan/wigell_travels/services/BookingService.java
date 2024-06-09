@@ -19,14 +19,16 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final CustomerService customerService;
     private final TripService tripService;
+    private final BookingItemService bookingItemService;
     private final RestTemplate restTemplate;
     private final Logger logger = Logger.getLogger(BookingService.class);
 
     @Autowired
-    public BookingService(BookingRepository bookingRepository, CustomerService customerService, TripService tripService, RestTemplate restTemplate) {
+    public BookingService(BookingRepository bookingRepository, CustomerService customerService, TripService tripService, BookingItemService bookingItemService, RestTemplate restTemplate) {
         this.bookingRepository = bookingRepository;
         this.customerService = customerService;
         this.tripService = tripService;
+        this.bookingItemService = bookingItemService;
         this.restTemplate = restTemplate;
     }
 
@@ -34,7 +36,7 @@ public class BookingService {
         return bookingRepository.findAll();
     }
 
-    public Booking findBookingById(int id) {
+    public Booking findBookingById(long id) {
         Optional<Booking> optionalBooking = bookingRepository.findById(id);
 
         if (optionalBooking.isPresent()) {
@@ -44,7 +46,7 @@ public class BookingService {
         }
     }
 
-    public ResponseTemplateVO createBooking(int customerId, int tripId) {
+    public ResponseTemplateVO createBooking(long customerId, long tripId) {
         Customer customer = customerService.findUserById(customerId);
         Trip trip = tripService.findTripById(tripId);
 
@@ -54,16 +56,19 @@ public class BookingService {
             // Create a departureDate 1 month ahead in time
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.MONTH, 1);
-            Date date = new Date();
+            Date date;
             date = cal.getTime();
 
             Booking booking = new Booking(date, trip, customer);
 
             bookingRepository.save(booking);
 
+            // Create a bookingItem that wont be deleted
+            bookingItemService.create(booking);
+
             ResponseTemplateVO vo = new ResponseTemplateVO();
 
-            Currency totalCost = restTemplate.getForObject("http://WIGELL-CURRENCY/api/v2/currency/" + costPerWeek, Currency.class);
+            Currency totalCost = restTemplate.getForObject("http://WIGELL-CURRENCY/api/v1/currency/" + costPerWeek, Currency.class);
 
             vo.setBooking(booking);
             vo.setTotalCost(totalCost);
@@ -81,7 +86,7 @@ public class BookingService {
         }
     }
 
-    public Booking updateBooking(int bookingId, int customerId, int tripId) {
+    public Booking updateBooking(long bookingId, long customerId, long tripId) {
         Booking existingBooking = findBookingById(bookingId);
         Customer newCustomer = customerService.findUserById(customerId);
         Trip newTrip = tripService.findTripById(tripId);
@@ -101,44 +106,13 @@ public class BookingService {
 
             bookingRepository.save(existingBooking);
 
+            bookingItemService.update(bookingId, customerId, tripId);
+
             logger.info("\nBooking ID: " + existingBooking.getId() + " was updated. " + changes.toString() + ".\n");
 
             return existingBooking;
         } else {
             logger.error("\nERROR: Booking with provided ID: " + bookingId + " does not exist.\n");
-            return null;
-        }
-    }
-
-    public List<ResponseTemplateVO> findMyBookings(int customerId) {
-        Customer customer = customerService.findUserById(customerId);
-
-        if (customer != null) {
-            List<Booking> myBookings = new ArrayList<>();
-            for (Booking booking : bookingRepository.findAll()) {
-                if (booking.getCustomer().equals(customer)) {
-                    myBookings.add(booking);
-                }
-            }
-
-            // all bookings in one list - change to VO now
-            List<ResponseTemplateVO> myBookingsWithCurrency = new ArrayList<>();
-            for (Booking booking : myBookings) {
-                ResponseTemplateVO vo = new ResponseTemplateVO();
-
-                Currency totalCost = restTemplate.getForObject("http://WIGELL-CURRENCY/api/v2/currency/" + booking.getTrip().getPricePerWeek(), Currency.class);
-
-                vo.setBooking(booking);
-                vo.setTotalCost(totalCost);
-
-                myBookingsWithCurrency.add(vo);
-            }
-
-            myBookings.clear();
-
-            return myBookingsWithCurrency;
-        } else {
-            // ERROR: Customer with provided ID does not exist
             return null;
         }
     }
@@ -157,5 +131,4 @@ public class BookingService {
         }
 
     }
-
 }

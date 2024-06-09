@@ -22,7 +22,7 @@ public class TravelService {
         this.bookingService = bookingService;
     }
 
-    public List<Booking> findBookingsForTrip(int tripId) {
+    public List<Booking> findBookingsForTrip(long tripId) {
         Trip trip = tripService.findTripById(tripId);
         List<Booking> bookings = bookingService.allBookings();
         List<Booking> tripBookings = new ArrayList<>();
@@ -36,7 +36,7 @@ public class TravelService {
         return tripBookings;
     }
 
-    public String deleteTripWithBookings(int tripId) {
+    public String deleteTripWithBookings(long tripId) {
         Trip trip = tripService.findTripById(tripId);
 
         if (trip != null) {

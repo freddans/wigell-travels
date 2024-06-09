@@ -13,18 +13,20 @@ import java.util.Optional;
 public class TripService {
 
     private final TripRepository tripRepository;
+    private final TripItemService tripItemService;
     private final Logger logger = Logger.getLogger(BookingService.class);
 
     @Autowired
-    public TripService(TripRepository tripRepository) {
+    public TripService(TripRepository tripRepository, TripItemService tripItemService) {
         this.tripRepository = tripRepository;
+        this.tripItemService = tripItemService;
     }
 
     public List<Trip> allAvailableTrips() {
         return tripRepository.findAll();
     }
 
-    public Trip findTripById(int id) {
+    public Trip findTripById(long id) {
         Optional<Trip> optionalTrip = tripRepository.findById(id);
         if (optionalTrip.isPresent()) {
             return optionalTrip.get();
@@ -40,13 +42,18 @@ public class TripService {
                 tripInfo.getCountry() != null && !tripInfo.getCountry().isEmpty() &&
                 tripInfo.getCity() != null && !tripInfo.getCity().isEmpty()) {
 
+            Trip trip = new Trip(tripInfo.getPricePerWeek(), tripInfo.getHotelName(), tripInfo.getCountry(), tripInfo.getCity());
+            tripRepository.save(trip);
+
+            // Create Trip Item
+            tripItemService.create(trip);
+
             logger.info("\nAdmin added a new destination.\n" +
                     "Hotel: " + tripInfo.getHotelName() + ".\n" +
                     "Country: " + tripInfo.getCountry() + ".\n" +
                     "City: " + tripInfo.getCity() + ".\n");
 
-
-            return tripRepository.save(tripInfo);
+            return trip;
         } else {
             // ERROR: Price per week, hotelname, country or city was 0, empty or null
             logger.error("\nERROR: Admin tried to add a new destination. Either name of Hotel, Country or City was not filled in.\n");
@@ -54,7 +61,7 @@ public class TripService {
         }
     }
 
-    public Trip update(int id, Trip newTripInfo) {
+    public Trip update(long id, Trip newTripInfo) {
         Trip existingTrip = findTripById(id);
 
         if (existingTrip != null) {
@@ -80,6 +87,8 @@ public class TripService {
 
             tripRepository.save(existingTrip);
 
+            tripItemService.update(existingTrip);
+
             logger.info("\nAdmin updated Trip ID: " + existingTrip.getId() + " was updated. " + changes.toString() + ".\n");
 
             return existingTrip;
@@ -92,9 +101,8 @@ public class TripService {
         }
     }
 
-    public void delete(int id) {
+    public void delete(long id) {
         tripRepository.deleteById(id);
 
     }
-
 }

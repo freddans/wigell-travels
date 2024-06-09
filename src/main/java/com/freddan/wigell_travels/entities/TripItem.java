@@ -1,13 +1,14 @@
 package com.freddan.wigell_travels.entities;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "trips")
-public class Trip {
+@Table(name = "tripitems")
+public class TripItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     private double pricePerWeek;
@@ -17,10 +18,11 @@ public class Trip {
     private String country;
     private String city;
 
-    public Trip() {
+    public TripItem() {
     }
 
-    public Trip(double pricePerWeek, String hotelName, String country, String city) {
+    public TripItem(long id, double pricePerWeek, String hotelName, String country, String city) {
+        this.id = id;
         this.pricePerWeek = pricePerWeek;
         this.hotelName = hotelName;
         this.country = country;

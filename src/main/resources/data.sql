@@ -1,31 +1,49 @@
-DROP TABLE IF exists bookings, customers, trips;
+-- DROP TABLE IF exists bookings, customers, trips;
 
-CREATE TABLE customers (
+CREATE TABLE IF NOT EXISTS customers (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE,
     first_name VARCHAR(20),
     last_name VARCHAR(35),
     address VARCHAR(35)
-);
+    );
 
-CREATE TABLE trips (
+CREATE TABLE IF NOT EXISTS trips (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     price_per_week DECIMAL(10, 2),
     hotel_name VARCHAR(100),
     country VARCHAR(50),
     city VARCHAR(30)
-);
+    );
 
-CREATE TABLE bookings (
+CREATE TABLE IF NOT EXISTS bookings (
 
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     departure_date VARCHAR(50),
     trip_id BIGINT,
-    total_cost DECIMAL(10, 2),
     customer_id BIGINT,
     CONSTRAINT fk_trip FOREIGN KEY (trip_id) REFERENCES trips(id),
     CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
-);
+    );
+
+CREATE TABLE IF NOT EXISTS tripitems (
+
+    id BIGINT PRIMARY KEY,
+    price_per_week DECIMAL(10, 2),
+    hotel_name VARCHAR(100),
+    country VARCHAR(50),
+    city VARCHAR(30)
+    );
+
+CREATE TABLE IF NOT EXISTS bookingitems (
+
+    id BIGINT PRIMARY KEY,
+    departure_date VARCHAR(50),
+    tripitem_id BIGINT,
+    customer_id BIGINT,
+    CONSTRAINT tk_tripItem FOREIGN KEY (tripItem_id) REFERENCES tripitems(id),
+    CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
+    );
 
 INSERT INTO customers (username, first_name, last_name, address)
 VALUES
@@ -39,7 +57,17 @@ VALUES
     (16499, 'El Hotelo', 'Spain', 'Madrid'),
     (23200, 'Hotel Lisbon', 'Portugal', 'Lisbon');
 
-INSERT INTO bookings (departure_date, trip_id, total_cost, customer_id)
+INSERT INTO tripitems (id, price_per_week, hotel_name, country, city)
 VALUES
-    (DATE_ADD(NOW(), INTERVAL 3 MONTH), 1, 400, 1),
-    (DATE_ADD(NOW(), INTERVAL 2 MONTH), 2, 500, 2);
+    (1, 16499, 'El Hotelo', 'Spain', 'Madrid'),
+    (2, 23200, 'Hotel Lisbon', 'Portugal', 'Lisbon');
+
+INSERT INTO bookings (departure_date, trip_id, customer_id)
+VALUES
+    (DATE_ADD(NOW(), INTERVAL 3 MONTH), 1, 1),
+    (DATE_ADD(NOW(), INTERVAL 2 MONTH), 2, 2);
+
+INSERT INTO bookingitems (id, departure_date, tripitem_id, customer_id)
+VALUES
+    (1, DATE_ADD(NOW(), INTERVAL 3 MONTH), 1, 1),
+    (2, DATE_ADD(NOW(), INTERVAL 2 MONTH), 2, 2);

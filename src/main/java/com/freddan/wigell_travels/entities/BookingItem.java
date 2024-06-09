@@ -1,32 +1,31 @@
 package com.freddan.wigell_travels.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.Date;
 
 @Entity
-@Table(name = "bookings")
-public class Booking {
+@Table(name = "bookingitems")
+public class BookingItem {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     private Date departureDate;
 
     @ManyToOne
-    @JoinColumn(name = "trip_id")
-    private Trip trip;
+    @JoinColumn(name = "tripitem_id")
+    private TripItem trip;
 
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
-    public Booking() {
+    public BookingItem() {
     }
 
-    public Booking(Date departureDate, Trip trip, Customer customer) {
+    public BookingItem(long id, Date departureDate, TripItem trip, Customer customer) {
+        this.id = id;
         this.departureDate = departureDate;
         this.trip = trip;
         this.customer = customer;
@@ -48,11 +47,11 @@ public class Booking {
         this.departureDate = departureDate;
     }
 
-    public Trip getTrip() {
+    public TripItem getTrip() {
         return trip;
     }
 
-    public void setTrip(Trip trip) {
+    public void setTrip(TripItem trip) {
         this.trip = trip;
     }
 

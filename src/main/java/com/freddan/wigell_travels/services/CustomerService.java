@@ -22,7 +22,7 @@ public class CustomerService {
         return customerRepository.findAll();
     }
 
-    public Customer findUserById(int id) {
+    public Customer findUserById(long id) {
         Optional<Customer> optionalUser = customerRepository.findById(id);
 
         if (optionalUser.isPresent()) {

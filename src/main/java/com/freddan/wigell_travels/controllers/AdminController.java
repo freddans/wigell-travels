@@ -37,12 +37,12 @@ public class AdminController {
     }
 
     @PutMapping("/updatedestination/{id}")
-    public ResponseEntity<Trip> updateDestination(@PathVariable("id") int currentTripId, @RequestBody Trip newTripInfo) {
+    public ResponseEntity<Trip> updateDestination(@PathVariable("id") long currentTripId, @RequestBody Trip newTripInfo) {
         return ResponseEntity.ok(tripService.update(currentTripId, newTripInfo));
     }
 
     @DeleteMapping("/deletedestination/{id}")
-    public ResponseEntity<String> deleteDestination(@PathVariable("id") int tripId) {
+    public ResponseEntity<String> deleteDestination(@PathVariable("id") long tripId) {
         return ResponseEntity.ok(travelService.deleteTripWithBookings(tripId));
     }
 }
