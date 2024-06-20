@@ -44,7 +44,7 @@ public class CustomerController {
     }
 
     @GetMapping("/mybookings")
-    public List<BookingItemResponseTemplateVO> myBookingItems(@RequestParam("customerId") long customerId) {
+    public List<BookingItemResponseTemplateVO> myBookingItems(@RequestParam("customerId") long customerId) throws IllegalAccessException {
         return bookingItemService.findMyBookingItems(customerId);
     }
 }

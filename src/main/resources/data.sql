@@ -1,4 +1,8 @@
--- DROP TABLE IF exists bookings, customers, trips;
+DROP TABLE IF EXISTS bookingitems;
+DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS tripitems;
+DROP TABLE IF EXISTS trips;
+DROP TABLE IF EXISTS customers;
 
 CREATE TABLE IF NOT EXISTS customers (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -16,8 +20,15 @@ CREATE TABLE IF NOT EXISTS trips (
     city VARCHAR(30)
     );
 
-CREATE TABLE IF NOT EXISTS bookings (
+CREATE TABLE IF NOT EXISTS tripitems (
+    id BIGINT PRIMARY KEY,
+    price_per_week DECIMAL(10, 2),
+    hotel_name VARCHAR(100),
+    country VARCHAR(50),
+    city VARCHAR(30)
+    );
 
+CREATE TABLE IF NOT EXISTS bookings (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     departure_date VARCHAR(50),
     trip_id BIGINT,
@@ -26,23 +37,13 @@ CREATE TABLE IF NOT EXISTS bookings (
     CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
     );
 
-CREATE TABLE IF NOT EXISTS tripitems (
-
-    id BIGINT PRIMARY KEY,
-    price_per_week DECIMAL(10, 2),
-    hotel_name VARCHAR(100),
-    country VARCHAR(50),
-    city VARCHAR(30)
-    );
-
 CREATE TABLE IF NOT EXISTS bookingitems (
-
     id BIGINT PRIMARY KEY,
     departure_date VARCHAR(50),
     tripitem_id BIGINT,
     customer_id BIGINT,
     CONSTRAINT tk_tripItem FOREIGN KEY (tripItem_id) REFERENCES tripitems(id),
-    CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
+    CONSTRAINT fk_booking_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
     );
 
 INSERT INTO customers (username, first_name, last_name, address)

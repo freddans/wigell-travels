@@ -9,6 +9,7 @@ import com.freddan.wigell_travels.entities.TripItem;
 import com.freddan.wigell_travels.repositories.BookingItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
@@ -74,36 +75,64 @@ public class BookingItemService {
         bookingItemRepository.save(bookingItem);
     }
 
-    public List<BookingItemResponseTemplateVO> findMyBookingItems(long customerId) {
+    public List<BookingItemResponseTemplateVO> findMyBookingItems(long customerId) throws IllegalAccessException {
         Customer customer = customerService.findUserById(customerId);
 
         if (customer != null) {
+            System.out.println("GOOD: Customer EXIST");
             List<BookingItem> myBookings = new ArrayList<>();
+            System.out.println("GOOD: CREATED myBookings LIST... scanning for bookingItems");
             for (BookingItem bookingItem : bookingItemRepository.findAll()) {
                 if (bookingItem.getCustomer().equals(customer)) {
                     myBookings.add(bookingItem);
                 }
             }
 
+            if (myBookings.isEmpty()) {
+                System.out.println("BAD: myBookings is EMPTY");
+            } else {
+                System.out.println("GOOD: myBookings HAS BOOKINGS");
+            }
+
             // all bookings in one list - change to VO now
             List<BookingItemResponseTemplateVO> myBookingsWithCurrency = new ArrayList<>();
+            System.out.println("GOOD: CREATED myBookingsWithCurrency");
             for (BookingItem bookingItem : myBookings) {
                 BookingItemResponseTemplateVO vo = new BookingItemResponseTemplateVO();
+                System.out.println("GOOD: CREATED NEW: vo");
+                try {
 
-                Currency totalCost = restTemplate.getForObject("http://WIGELL-CURRENCY/api/v1/currency/" + bookingItem.getTrip().getPricePerWeek(), Currency.class);
+                    System.out.println("GOOD: CREATING THE URL STRING");
 
-                vo.setBookingItem(bookingItem);
-                vo.setTotalCost(totalCost);
+                    String url = "http://WIGELL-CURRENCY/api/v1/currency/" + bookingItem.getTrip().getPricePerWeek();
 
-                myBookingsWithCurrency.add(vo);
+                    System.out.println("GOOD: URL SUCCESSFUL AND IS: " + url);
+
+                    Currency totalCost = restTemplate.getForObject(url, Currency.class);
+
+                    System.out.println("CREATED CURRENCY: totalCost");
+
+                    vo.setBookingItem(bookingItem);
+                    vo.setTotalCost(totalCost);
+
+                    System.out.println("GOOD: SET BOOKING ITEM AND TOTAL CIST");
+
+                    myBookingsWithCurrency.add(vo);
+                    System.out.println("GOOD: ADDED vo TO booking LIST");
+                } catch (RestClientException e) {
+                    e.printStackTrace();
+
+                    throw new IllegalAccessException("Error fetching currency data");
+                }
             }
 
             myBookings.clear();
+            System.out.println("CLEARED myBOOKINGS and returning myBookingsWithCurrency-LIST");
 
             return myBookingsWithCurrency;
         } else {
-            // ERROR: Customer with provided ID does not exist
-            return null;
+            System.out.println("ERROR: Customer with provided ID does not exist");
+            throw new IllegalAccessException("Customer with provided ID does not exist");
         }
     }
 }
