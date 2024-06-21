@@ -177,7 +177,8 @@ public class BookingItemService {
 
                 double pricePerWeek = (bookingItem.getTrip().getPricePerWeek() * bookingItem.getTickets());
 
-                String url = "http://WIGELL-CURRENCY/api/v1/currency/" + pricePerWeek;
+                String url = "http://currency:5050/api/v1/currency/" + pricePerWeek;
+
 
                 Currency totalCost = restTemplate.getForObject(url, Currency.class);
 
