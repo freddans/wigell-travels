@@ -1,7 +1,0 @@
-2024-06-21 09:15:00,868 * ERROR * com.freddan.wigell_travels.services.BookingService * update * 
-ERROR: Admin tried to update Trip ID: 4 but Trip with provided ID does not exist.
-Provided Trip ID: 4.
-
-2024-06-21 09:15:04,967 * INFO * com.freddan.wigell_travels.services.BookingService * update * 
-Admin updated Trip ID: 3 was updated. Changed Available tickets to: 3.
-
