@@ -6,6 +6,7 @@ import com.freddan.wigell_travels.entities.Booking;
 import com.freddan.wigell_travels.entities.BookingItem;
 import com.freddan.wigell_travels.entities.Customer;
 import com.freddan.wigell_travels.entities.TripItem;
+import com.freddan.wigell_travels.exceptions.TravelException;
 import com.freddan.wigell_travels.repositories.BookingItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,101 +39,165 @@ public class BookingItemService {
         return optionalBookingItem.orElse(null);
     }
 
+//    public void create(Booking booking) {
+//        TripItem trip = tripItemService.findTripItemById(booking.getTrip().getId());
+//
+//        if (trip != null) {
+//
+//            BookingItem bookingItem = new BookingItem(booking.getId(), booking.getDepartureDate(), trip, booking.getCustomer(), booking.getTickets());
+//            bookingItemRepository.save(bookingItem);
+//
+//
+//        } else {
+//            // ERROR: TripItem ID does not exist.
+//        }
+//    }
+
     public void create(Booking booking) {
         TripItem trip = tripItemService.findTripItemById(booking.getTrip().getId());
 
         if (trip != null) {
+            trip.setAvailableTickets(trip.getAvailableTickets() - booking.getTickets());
+            tripItemService.saveOrUpdate(trip);
 
-            BookingItem bookingItem = new BookingItem(booking.getId(), booking.getDepartureDate(), trip, booking.getCustomer());
+            BookingItem bookingItem = new BookingItem(booking.getId(), booking.getDepartureDate(), trip, booking.getCustomer(), booking.getTickets());
+
             bookingItemRepository.save(bookingItem);
 
-
-        } else {
-            // ERROR: TripItem ID does not exist.
         }
     }
 
-    public void update(long bookingId, long newCustomerId, long newTripId) {
-        BookingItem bookingItem = findBookingItemById(bookingId);
-        Customer oldCustomer = customerService.findUserById(bookingItem.getCustomer().getId());
-        TripItem oldTrip = tripItemService.findTripItemById(bookingItem.getTrip().getId());
+    public void update(long bookingId, long newCustomerId, long newTripId, int tickets) {
+        BookingItem existingBookingItem = findBookingItemById(bookingId);
+        Customer newCustomer = customerService.findUserById(newCustomerId);
+        TripItem oldTrip = tripItemService.findTripItemById(existingBookingItem.getTrip().getId());
+        TripItem newTrip = tripItemService.findTripItemById(newTripId);
+
+        if (existingBookingItem != null) {
+
+            if (newCustomer != null) {
+                existingBookingItem.setCustomer(newCustomer);
+            }
+            if (newTrip != null && newTripId != existingBookingItem.getTrip().getId()) {
+                int oldTickets = existingBookingItem.getTickets();
+
+                if (tickets > 0) {
+                    if (newTrip.getAvailableTickets() >= tickets) {
+
+                        oldTrip.setAvailableTickets(oldTrip.getAvailableTickets() + oldTickets);
+
+                        newTrip.setAvailableTickets(newTrip.getAvailableTickets() - tickets);
+
+                        tripItemService.saveOrUpdate(oldTrip);
+                        tripItemService.saveOrUpdate(newTrip);
+
+                        existingBookingItem.setTickets(tickets);
+
+                        existingBookingItem.setTrip(newTrip);
+                    } else {
+                        // error not enough tickets in stock
+                    }
+                }
+            } else {
+
+                if (tickets > 0 && tickets != existingBookingItem.getTickets()) {
+
+                    if (tickets < existingBookingItem.getTickets()) {
+
+                        int ticketsToGiveBack = existingBookingItem.getTickets() - tickets;
+
+                        if (tickets <= (oldTrip.getAvailableTickets() + ticketsToGiveBack)) {
+
+                            existingBookingItem.setTickets(existingBookingItem.getTickets() - ticketsToGiveBack);
+                            existingBookingItem.getTrip().setAvailableTickets(existingBookingItem.getTrip().getAvailableTickets() + ticketsToGiveBack);
+
+                            tripItemService.saveOrUpdate(existingBookingItem.getTrip());
+                        } else {
+                            // error not enough tickets in stock
+                        }
 
 
-        // If trip ip is not same as bookingItem trip ID or tripId is 0
-        if (oldTrip.getId() != newTripId && newTripId != 0) {
-            // send the trip to update trip
-            TripItem newTrip = tripItemService.findTripItemById(newTripId);
-            if (newTrip != null) {
-                bookingItem.setTrip(newTrip);
+                    } else if (tickets > existingBookingItem.getTickets()) {
+                        int ticketsToBuy = tickets - existingBookingItem.getTickets();
+
+                        if ((ticketsToBuy) <= existingBookingItem.getTrip().getAvailableTickets()) {
+
+                            existingBookingItem.setTickets(existingBookingItem.getTickets() + ticketsToBuy);
+                            existingBookingItem.getTrip().setAvailableTickets(existingBookingItem.getTrip().getAvailableTickets() - ticketsToBuy);
+
+                            tripItemService.saveOrUpdate(existingBookingItem.getTrip());
+                        } else {
+                            // error not enough tickets in stock
+                        }
+                    }
+                }
             }
         }
-        if (oldCustomer.getId() != newCustomerId && newCustomerId != 0) {
-            Customer newCustomer = customerService.findUserById(newCustomerId);
 
-            bookingItem.setCustomer(newCustomer);
+        tripItemService.saveOrUpdate(oldTrip);
+
+        bookingItemRepository.save(existingBookingItem);
+
+        if (tickets == 0) {
+            int nrOfTickets = existingBookingItem.getTickets();
+            existingBookingItem.getTrip().setAvailableTickets(existingBookingItem.getTrip().getAvailableTickets() + nrOfTickets);
+            tripItemService.saveOrUpdate(existingBookingItem.getTrip());
+
+            delete(existingBookingItem);
         }
-
-        bookingItemRepository.save(bookingItem);
     }
 
-    public List<BookingItemResponseTemplateVO> findMyBookingItems(long customerId) throws IllegalAccessException {
+    public void delete(BookingItem booking) {
+        BookingItem bookingToDelete = findBookingItemById(booking.getId());
+
+        if (bookingToDelete != null) {
+            bookingItemRepository.delete(bookingToDelete);
+        }
+
+    }
+
+    public List<BookingItemResponseTemplateVO> findMyBookingItems(long customerId) {
         Customer customer = customerService.findUserById(customerId);
 
         if (customer != null) {
-            System.out.println("GOOD: Customer EXIST");
+
             List<BookingItem> myBookings = new ArrayList<>();
-            System.out.println("GOOD: CREATED myBookings LIST... scanning for bookingItems");
             for (BookingItem bookingItem : bookingItemRepository.findAll()) {
                 if (bookingItem.getCustomer().equals(customer)) {
                     myBookings.add(bookingItem);
                 }
             }
 
-            if (myBookings.isEmpty()) {
-                System.out.println("BAD: myBookings is EMPTY");
-            } else {
-                System.out.println("GOOD: myBookings HAS BOOKINGS");
-            }
 
             // all bookings in one list - change to VO now
             List<BookingItemResponseTemplateVO> myBookingsWithCurrency = new ArrayList<>();
-            System.out.println("GOOD: CREATED myBookingsWithCurrency");
+
             for (BookingItem bookingItem : myBookings) {
                 BookingItemResponseTemplateVO vo = new BookingItemResponseTemplateVO();
-                System.out.println("GOOD: CREATED NEW: vo");
-                try {
 
-                    System.out.println("GOOD: CREATING THE URL STRING");
+                double pricePerWeek = (bookingItem.getTrip().getPricePerWeek() * bookingItem.getTickets());
 
-                    String url = "http://WIGELL-CURRENCY/api/v1/currency/" + bookingItem.getTrip().getPricePerWeek();
+                String url = "http://WIGELL-CURRENCY/api/v1/currency/" + pricePerWeek;
 
-                    System.out.println("GOOD: URL SUCCESSFUL AND IS: " + url);
+                Currency totalCost = restTemplate.getForObject(url, Currency.class);
 
-                    Currency totalCost = restTemplate.getForObject(url, Currency.class);
+                vo.setBookingItem(bookingItem);
+                vo.setTotalCost(totalCost);
 
-                    System.out.println("CREATED CURRENCY: totalCost");
 
-                    vo.setBookingItem(bookingItem);
-                    vo.setTotalCost(totalCost);
-
-                    System.out.println("GOOD: SET BOOKING ITEM AND TOTAL CIST");
-
-                    myBookingsWithCurrency.add(vo);
-                    System.out.println("GOOD: ADDED vo TO booking LIST");
-                } catch (RestClientException e) {
-                    e.printStackTrace();
-
-                    throw new IllegalAccessException("Error fetching currency data");
-                }
+                myBookingsWithCurrency.add(vo);
             }
 
             myBookings.clear();
-            System.out.println("CLEARED myBOOKINGS and returning myBookingsWithCurrency-LIST");
 
-            return myBookingsWithCurrency;
+            if (myBookingsWithCurrency.isEmpty()) {
+                throw new TravelException("Customer currently has no active bookings");
+            } else {
+                return myBookingsWithCurrency;
+            }
         } else {
-            System.out.println("ERROR: Customer with provided ID does not exist");
-            throw new IllegalAccessException("Customer with provided ID does not exist");
+            throw new TravelException("ERROR: Customer with provided ID does not exist");
         }
     }
+
 }

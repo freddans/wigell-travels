@@ -1,5 +1,6 @@
 package com.freddan.wigell_travels.entities;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -13,20 +14,27 @@ public class TripItem {
 
     private double pricePerWeek;
 
+    @Column(length = 100)
     private String hotelName;
 
+    @Column(length = 50)
     private String country;
+
+    @Column(length = 30)
     private String city;
+
+    private int availableTickets;
 
     public TripItem() {
     }
 
-    public TripItem(long id, double pricePerWeek, String hotelName, String country, String city) {
+    public TripItem(long id, double pricePerWeek, String hotelName, String country, String city, int availableTickets) {
         this.id = id;
         this.pricePerWeek = pricePerWeek;
         this.hotelName = hotelName;
         this.country = country;
         this.city = city;
+        this.availableTickets = availableTickets;
     }
 
     public long getId() {
@@ -67,5 +75,13 @@ public class TripItem {
 
     public void setCity(String city) {
         this.city = city;
+    }
+
+    public int getAvailableTickets() {
+        return availableTickets;
+    }
+
+    public void setAvailableTickets(int availableTickets) {
+        this.availableTickets = availableTickets;
     }
 }

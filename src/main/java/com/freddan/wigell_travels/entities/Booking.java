@@ -23,13 +23,16 @@ public class Booking {
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
+    private int tickets;
+
     public Booking() {
     }
 
-    public Booking(Date departureDate, Trip trip, Customer customer) {
+    public Booking(Date departureDate, Trip trip, Customer customer, int tickets) {
         this.departureDate = departureDate;
         this.trip = trip;
         this.customer = customer;
+        this.tickets = tickets;
     }
 
     public long getId() {
@@ -62,5 +65,13 @@ public class Booking {
 
     public void setCustomer(Customer customer) {
         this.customer = customer;
+    }
+
+    public int getTickets() {
+        return tickets;
+    }
+
+    public void setTickets(int tickets) {
+        this.tickets = tickets;
     }
 }

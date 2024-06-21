@@ -8,10 +8,16 @@ public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @Column (unique = true)
+    @Column (unique = true, length = 50)
     private String username;
+
+    @Column(length = 20)
     private String firstName;
+
+    @Column(length = 35)
     private String lastName;
+
+    @Column(length = 35)
     private String address;
 
     public Customer() {

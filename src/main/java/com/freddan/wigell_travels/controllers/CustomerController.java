@@ -2,12 +2,13 @@ package com.freddan.wigell_travels.controllers;
 
 import com.freddan.wigell_travels.VO.BookingItemResponseTemplateVO;
 import com.freddan.wigell_travels.VO.ResponseTemplateVO;
-import com.freddan.wigell_travels.entities.Booking;
 import com.freddan.wigell_travels.entities.Trip;
+import com.freddan.wigell_travels.exceptions.TravelException;
 import com.freddan.wigell_travels.services.BookingItemService;
 import com.freddan.wigell_travels.services.BookingService;
 import com.freddan.wigell_travels.services.TripService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,17 +35,32 @@ public class CustomerController {
     }
 
     @PostMapping("/booktrip")
-    public ResponseTemplateVO bookTrip(@RequestParam("customerId") long customerId, @RequestParam("tripId") long tripId) {
-        return bookingService.createBooking(customerId, tripId);
+    public ResponseEntity<?> bookTrip(@RequestParam("customerId") long customerId, @RequestParam("tripId") long tripId,
+                                       @RequestParam("tickets") int tickets) {
+        try {
+            return ResponseEntity.ok(bookingService.createBooking(customerId, tripId, tickets));
+        } catch (TravelException e) {
+            return ResponseEntity.status(HttpStatus.OK).body(e.getMessage());
+        }
     }
 
     @PutMapping("/updatetrip/{id}")
-    public ResponseEntity<Booking> updateTrip(@PathVariable("id") long bookingId, @RequestParam("customerId") long customerId, @RequestParam("tripId") long tripId) {
-        return ResponseEntity.ok(bookingService.updateBooking(bookingId, customerId, tripId));
+    public ResponseEntity<?> updateTrip(@PathVariable("id") long bookingId, @RequestParam("customerId") long customerId,
+                                              @RequestParam("tripId") long tripId, @RequestParam("tickets") int tickets) {
+        try {
+            return ResponseEntity.ok(bookingService.updateBooking(bookingId, customerId, tripId, tickets));
+        } catch (TravelException e) {
+            return ResponseEntity.status(HttpStatus.OK).body(e.getMessage());
+        }
     }
 
     @GetMapping("/mybookings")
-    public List<BookingItemResponseTemplateVO> myBookingItems(@RequestParam("customerId") long customerId) throws IllegalAccessException {
-        return bookingItemService.findMyBookingItems(customerId);
+    public ResponseEntity<?> myBookingItems(@RequestParam("customerId") long customerId) {
+        try {
+            List<BookingItemResponseTemplateVO> bookings = bookingItemService.findMyBookingItems(customerId);
+            return ResponseEntity.ok(bookings);
+        } catch (TravelException e) {
+            return ResponseEntity.status(HttpStatus.OK).body(e.getMessage());
+        }
     }
 }

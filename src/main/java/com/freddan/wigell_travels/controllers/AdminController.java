@@ -2,10 +2,12 @@ package com.freddan.wigell_travels.controllers;
 
 import com.freddan.wigell_travels.entities.Customer;
 import com.freddan.wigell_travels.entities.Trip;
+import com.freddan.wigell_travels.exceptions.TravelException;
 import com.freddan.wigell_travels.services.CustomerService;
 import com.freddan.wigell_travels.services.TravelService;
 import com.freddan.wigell_travels.services.TripService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,13 +34,21 @@ public class AdminController {
     }
 
     @PostMapping("/add-destination")
-    public ResponseEntity<Trip> createDestination(@RequestBody Trip destination) {
-        return ResponseEntity.ok(tripService.create(destination));
+    public ResponseEntity<?> createDestination(@RequestBody Trip destination) {
+        try {
+            return ResponseEntity.ok(tripService.create(destination));
+        } catch (TravelException e) {
+            return ResponseEntity.status(HttpStatus.OK).body(e.getMessage());
+        }
     }
 
     @PutMapping("/updatedestination/{id}")
-    public ResponseEntity<Trip> updateDestination(@PathVariable("id") long currentTripId, @RequestBody Trip newTripInfo) {
-        return ResponseEntity.ok(tripService.update(currentTripId, newTripInfo));
+    public ResponseEntity<?> updateDestination(@PathVariable("id") long currentTripId, @RequestBody Trip newTripInfo) {
+        try {
+            return ResponseEntity.ok(tripService.update(currentTripId, newTripInfo));
+        } catch (TravelException e) {
+            return ResponseEntity.status(HttpStatus.OK).body(e.getMessage());
+        }
     }
 
     @DeleteMapping("/deletedestination/{id}")

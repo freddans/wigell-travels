@@ -5,6 +5,7 @@ import com.freddan.wigell_travels.VO.ResponseTemplateVO;
 import com.freddan.wigell_travels.entities.Booking;
 import com.freddan.wigell_travels.entities.Customer;
 import com.freddan.wigell_travels.entities.Trip;
+import com.freddan.wigell_travels.exceptions.TravelException;
 import com.freddan.wigell_travels.repositories.BookingRepository;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,47 +47,72 @@ public class BookingService {
         }
     }
 
-    public ResponseTemplateVO createBooking(long customerId, long tripId) {
+    public ResponseTemplateVO createBooking(long customerId, long tripId, int tickets) {
         Customer customer = customerService.findUserById(customerId);
         Trip trip = tripService.findTripById(tripId);
 
-        if (customer != null && trip != null) {
-            double costPerWeek = trip.getPricePerWeek();
+        if (customer != null) {
+            if (trip != null) {
+                if (tickets >= 1) {
+                    if (trip.getAvailableTickets() >= tickets) {
+                        double costPerWeek = (trip.getPricePerWeek() * tickets);
 
-            // Create a departureDate 1 month ahead in time
-            Calendar cal = Calendar.getInstance();
-            cal.add(Calendar.MONTH, 1);
-            Date date;
-            date = cal.getTime();
+                        // Create a departureDate 1 month ahead in time
+                        Calendar cal = Calendar.getInstance();
+                        cal.add(Calendar.MONTH, 1);
+                        Date date;
+                        date = cal.getTime();
 
-            Booking booking = new Booking(date, trip, customer);
+                        Booking booking = new Booking(date, trip, customer, tickets);
 
-            bookingRepository.save(booking);
+                        trip.setAvailableTickets(trip.getAvailableTickets() - tickets);
+                        tripService.saveOrUpdate(trip);
 
-            // Create a bookingItem that wont be deleted
-            bookingItemService.create(booking);
+                        bookingRepository.save(booking);
 
-            ResponseTemplateVO vo = new ResponseTemplateVO();
+                        // Create a bookingItem that wont be deleted
+                        bookingItemService.create(booking);
 
-            Currency totalCost = restTemplate.getForObject("http://WIGELL-CURRENCY/api/v1/currency/" + costPerWeek, Currency.class);
+                        ResponseTemplateVO vo = new ResponseTemplateVO();
 
-            vo.setBooking(booking);
-            vo.setTotalCost(totalCost);
+                        Currency totalCost = restTemplate.getForObject("http://WIGELL-CURRENCY/api/v1/currency/" + costPerWeek, Currency.class);
 
-            logger.info("\nCustomer " + customer.getFirstName() + " '" + customer.getUsername() + "' " + customer.getLastName() + " booked a trip to " + trip.getCity() + ", " + trip.getCountry() + ".\n");
+                        vo.setBooking(booking);
+                        vo.setTotalCost(totalCost);
 
-            return vo;
+                        logger.info("\nCustomer " + customer.getFirstName() + " '" + customer.getUsername() + "' " + customer.getLastName() + " booked a trip to " + trip.getCity() + ", " + trip.getCountry() + ".\n");
+
+                        return vo;
+                    } else {
+                        logger.error("\nERROR: Customer tried to book more tickets than in stock\n");
+                        throw new TravelException("ERROR: Not enough tickets in stock.\n" +
+                                "You tried to book " + tickets + " out of " + trip.getAvailableTickets() + " available tickets");
+                    }
+                } else {
+                    // tickets are 0 or less
+                    logger.error("\nERROR: Customer tried to order less than 0 tickets");
+                    throw new TravelException("ERROR: Amount of tickets has to be 1 or more");
+                }
+            } else {
+                // trip is null
+                logger.error("\nERROR: Trip with provided ID does not exist.\n" +
+                        "Provided Trip ID: " + tripId);
+                throw new TravelException("ERROR: Trip with provided ID does not exist.\n" +
+                        "Provided Trip ID: " + tripId);
+            }
+
+
         } else {
 
-            // ERROR customer or trip is null
-            logger.error("\nERROR: Either the provided ID for Customer or Trip does not exist.\n" +
-                    "Provided Customer ID: " + customerId + ".\n" +
-                    "Provided Trip ID: " + tripId + ".\n");
-            return null;
+            // ERROR customer is null
+            logger.error("\nERROR: Customer with provided ID does not exist.\n" +
+                    "Provided Customer ID: " + customerId + ".\n");
+            throw new TravelException("ERROR: Customer with provided ID does not exist.\n" +
+                    "Provided Customer ID: " + customerId);
         }
     }
 
-    public Booking updateBooking(long bookingId, long customerId, long tripId) {
+    public Booking updateBooking(long bookingId, long customerId, long tripId, int tickets) {
         Booking existingBooking = findBookingById(bookingId);
         Customer newCustomer = customerService.findUserById(customerId);
         Trip newTrip = tripService.findTripById(tripId);
@@ -95,25 +121,121 @@ public class BookingService {
 
             StringBuilder changes = new StringBuilder();
 
-            if (newCustomer != null) {
+            if (newCustomer != null && newCustomer.getId() != existingBooking.getCustomer().getId()) {
                 existingBooking.setCustomer(newCustomer);
                 changes.append("\nChanged Customer to ID: " + newCustomer.getId() + ".\n");
+
+            } else if (newCustomer == null) {
+                logger.error("\nERROR: Customer with provided ID does not exist.\n");
+                throw new TravelException("ERROR: Customer with provided ID does not exist.\n" +
+                        "Provided Customer ID: " + customerId);
             }
-            if (newTrip != null) {
-                existingBooking.setTrip(newTrip);
-                changes.append("Changed Trip to ID: " + newTrip.getId());
+            // If new trip is added
+            if (newTrip != null && newTrip.getId() != existingBooking.getTrip().getId()) {
+
+                // get old trip
+                Trip oldTrip = existingBooking.getTrip();
+
+                // get old tickets
+                int oldTickets = existingBooking.getTickets();
+
+
+                if (tickets > 0) {
+                    // if availableTickets are enough for booking
+                    if (newTrip.getAvailableTickets() >= tickets) {
+
+                        // give back old tickets
+                        oldTrip.setAvailableTickets(oldTrip.getAvailableTickets() + oldTickets);
+
+                        // buy new tickets
+                        newTrip.setAvailableTickets(newTrip.getAvailableTickets() - tickets);
+
+                        // save old and new trip
+                        tripService.saveOrUpdate(oldTrip);
+                        tripService.saveOrUpdate(newTrip);
+
+                        existingBooking.setTickets(tickets);
+
+                        existingBooking.setTrip(newTrip);
+                        changes.append("Changed Trip to ID: " + newTrip.getId() + ".\n");
+                        changes.append("Changed Tickets to: " + tickets);
+
+                    } else {
+                        logger.error("\nERROR: Customer tried to order more tickets than there are in stock.");
+                        throw new TravelException("ERROR: Not enough tickets in stock.\n" +
+                                "You tried to book " + tickets + " out of " + newTrip.getAvailableTickets() + " available tickets");
+                    }
+                } else if (tickets < 0) {
+                    logger.error("\nERROR: Customer tried to book less than 1 ticket\n");
+                    throw new TravelException("ERROR: Amount of tickets has to be 1 or more");
+                }
+            } else if (newTrip == null) {
+                logger.error("\nERROR: Customer tried to update Trip but provided Trip ID doesnt exist.\n");
+                throw new TravelException("ERROR: Trip with provided ID does not exist.\n" +
+                        "Provided Trip ID: " + tripId);
+            }
+            else {
+                // if the trip is the same
+
+
+                if (tickets > 0 && tickets != existingBooking.getTickets()) {
+                    if (tickets < existingBooking.getTickets()) {
+                        int ticketsToGiveBack = existingBooking.getTickets() - tickets;
+
+                        existingBooking.setTickets(existingBooking.getTickets() - ticketsToGiveBack);
+                        existingBooking.getTrip().setAvailableTickets(existingBooking.getTrip().getAvailableTickets() + ticketsToGiveBack);
+
+                        // save trip
+                        tripService.saveOrUpdate(existingBooking.getTrip());
+                        changes.append("Reduced tickets to: " + existingBooking.getTickets() + ".\n");
+
+                    } else if (tickets > existingBooking.getTickets()) {
+
+                        int ticketsToBuy = tickets - existingBooking.getTickets();
+                        if (ticketsToBuy <= existingBooking.getTrip().getAvailableTickets()) {
+
+                            existingBooking.setTickets(existingBooking.getTickets() + ticketsToBuy);
+                            existingBooking.getTrip().setAvailableTickets(existingBooking.getTrip().getAvailableTickets() - ticketsToBuy);
+
+                            tripService.saveOrUpdate(existingBooking.getTrip());
+                            changes.append("Added more tickets to: " + existingBooking.getTickets());
+                        } else {
+                            logger.error("\nERROR: Customer tried to order more tickets than there are in stock.");
+                            throw new TravelException("ERROR: Not enough tickets in stock.\n" +
+                                    "You tried to book " + tickets + " out of " + (existingBooking.getTrip().getAvailableTickets()+existingBooking.getTickets()) + " available tickets");
+                        }
+                    }
+                } if (tickets < 0) {
+                    logger.error("\nERROR: Customer tried to book less than 1 ticket\n");
+                    throw new TravelException("ERROR: Amount of tickets has to be 1 or more");
+                }
             }
 
             bookingRepository.save(existingBooking);
 
-            bookingItemService.update(bookingId, customerId, tripId);
+            bookingItemService.update(bookingId, customerId, tripId, tickets);
 
-            logger.info("\nBooking ID: " + existingBooking.getId() + " was updated. " + changes.toString() + ".\n");
 
-            return existingBooking;
+
+            if (tickets == 0) {
+                int nrOfTickets = existingBooking.getTickets();
+                existingBooking.getTrip().setAvailableTickets(existingBooking.getTrip().getAvailableTickets() + nrOfTickets);
+                tripService.saveOrUpdate(existingBooking.getTrip());
+
+                delete(existingBooking);
+
+                logger.info("\nCustomer deleted his booking by un-booking tickets.\n");
+
+                throw new TravelException("Booking deleted");
+            } else {
+                logger.info("\nBooking ID: " + existingBooking.getId() + " was updated. " + changes.toString() + ".\n");
+
+                return existingBooking;
+            }
+
         } else {
             logger.error("\nERROR: Booking with provided ID: " + bookingId + " does not exist.\n");
-            return null;
+            throw new TravelException("ERROR: Booking with provided ID: " + bookingId + " does not exist.");
         }
     }
 

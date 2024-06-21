@@ -12,19 +12,26 @@ public class Trip {
 
     private double pricePerWeek;
 
+    @Column(length = 100)
     private String hotelName;
 
+    @Column(length = 50)
     private String country;
+
+    @Column(length = 30)
     private String city;
+
+    private int availableTickets;
 
     public Trip() {
     }
 
-    public Trip(double pricePerWeek, String hotelName, String country, String city) {
+    public Trip(double pricePerWeek, String hotelName, String country, String city, int availableTickets) {
         this.pricePerWeek = pricePerWeek;
         this.hotelName = hotelName;
         this.country = country;
         this.city = city;
+        this.availableTickets = availableTickets;
     }
 
     public long getId() {
@@ -65,5 +72,13 @@ public class Trip {
 
     public void setCity(String city) {
         this.city = city;
+    }
+
+    public int getAvailableTickets() {
+        return availableTickets;
+    }
+
+    public void setAvailableTickets(int availableTickets) {
+        this.availableTickets = availableTickets;
     }
 }

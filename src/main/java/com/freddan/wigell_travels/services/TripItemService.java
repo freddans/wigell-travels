@@ -26,7 +26,7 @@ public class TripItemService {
 
     public void create(Trip trip) {
 
-        TripItem tripItem = new TripItem(trip.getId(), trip.getPricePerWeek(), trip.getHotelName(), trip.getCountry(), trip.getCity());
+        TripItem tripItem = new TripItem(trip.getId(), trip.getPricePerWeek(), trip.getHotelName(), trip.getCountry(), trip.getCity(), trip.getAvailableTickets());
         tripItemRepository.save(tripItem);
     }
 
@@ -48,7 +48,14 @@ public class TripItemService {
         if (newTripInformation.getCity() != null && !newTripInformation.getCity().isEmpty() && !newTripInformation.getCity().equals(tripItem.getCity())) {
             tripItem.setCity(newTripInformation.getCity());
         }
+        if (newTripInformation.getAvailableTickets() != 0 && newTripInformation.getAvailableTickets() != tripItem.getAvailableTickets()) {
+            tripItem.setAvailableTickets(newTripInformation.getAvailableTickets());
+        }
 
+        tripItemRepository.save(tripItem);
+    }
+
+    public void saveOrUpdate(TripItem tripItem) {
         tripItemRepository.save(tripItem);
     }
 }

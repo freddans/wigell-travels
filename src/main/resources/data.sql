@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS trips (
     price_per_week DECIMAL(10, 2),
     hotel_name VARCHAR(100),
     country VARCHAR(50),
-    city VARCHAR(30)
+    city VARCHAR(30),
+    available_tickets INT
     );
 
 CREATE TABLE IF NOT EXISTS tripitems (
@@ -25,7 +26,8 @@ CREATE TABLE IF NOT EXISTS tripitems (
     price_per_week DECIMAL(10, 2),
     hotel_name VARCHAR(100),
     country VARCHAR(50),
-    city VARCHAR(30)
+    city VARCHAR(30),
+    available_tickets INT
     );
 
 CREATE TABLE IF NOT EXISTS bookings (
@@ -33,6 +35,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     departure_date VARCHAR(50),
     trip_id BIGINT,
     customer_id BIGINT,
+    tickets INT,
     CONSTRAINT fk_trip FOREIGN KEY (trip_id) REFERENCES trips(id),
     CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
     );
@@ -42,6 +45,7 @@ CREATE TABLE IF NOT EXISTS bookingitems (
     departure_date VARCHAR(50),
     tripitem_id BIGINT,
     customer_id BIGINT,
+    tickets INT,
     CONSTRAINT tk_tripItem FOREIGN KEY (tripItem_id) REFERENCES tripitems(id),
     CONSTRAINT fk_booking_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
     );
@@ -53,22 +57,22 @@ VALUES
     ('Iron Mike', 'Mike', 'Tyson', 'Amerikanskagatan 3'),
     ('Mackan', 'Marcus', 'Andersson', 'Smörgåsbordet 35');
 
-INSERT INTO trips (price_per_week, hotel_name, country, city)
+INSERT INTO trips (price_per_week, hotel_name, country, city, available_tickets)
 VALUES
-    (16499, 'El Hotelo', 'Spain', 'Madrid'),
-    (23200, 'Hotel Lisbon', 'Portugal', 'Lisbon');
+    (16499, 'El Hotelo', 'Spain', 'Madrid', 49),
+    (23200, 'Hotel Lisbon', 'Portugal', 'Lisbon', 49);
 
-INSERT INTO tripitems (id, price_per_week, hotel_name, country, city)
+INSERT INTO tripitems (id, price_per_week, hotel_name, country, city, available_tickets)
 VALUES
-    (1, 16499, 'El Hotelo', 'Spain', 'Madrid'),
-    (2, 23200, 'Hotel Lisbon', 'Portugal', 'Lisbon');
+    (1, 16499, 'El Hotelo', 'Spain', 'Madrid', 49),
+    (2, 23200, 'Hotel Lisbon', 'Portugal', 'Lisbon', 49);
 
-INSERT INTO bookings (departure_date, trip_id, customer_id)
+INSERT INTO bookings (departure_date, trip_id, customer_id, tickets)
 VALUES
-    (DATE_ADD(NOW(), INTERVAL 3 MONTH), 1, 1),
-    (DATE_ADD(NOW(), INTERVAL 2 MONTH), 2, 2);
+    (DATE_ADD(NOW(), INTERVAL 3 MONTH), 1, 1, 1),
+    (DATE_ADD(NOW(), INTERVAL 2 MONTH), 2, 2, 1);
 
-INSERT INTO bookingitems (id, departure_date, tripitem_id, customer_id)
+INSERT INTO bookingitems (id, departure_date, tripitem_id, customer_id, tickets)
 VALUES
-    (1, DATE_ADD(NOW(), INTERVAL 3 MONTH), 1, 1),
-    (2, DATE_ADD(NOW(), INTERVAL 2 MONTH), 2, 2);
+    (1, DATE_ADD(NOW(), INTERVAL 3 MONTH), 1, 1, 1),
+    (2, DATE_ADD(NOW(), INTERVAL 2 MONTH), 2, 2, 1);

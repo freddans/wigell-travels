@@ -1,11 +1,13 @@
 package com.freddan.wigell_travels.services;
 
 import com.freddan.wigell_travels.entities.Trip;
+import com.freddan.wigell_travels.exceptions.TravelException;
 import com.freddan.wigell_travels.repositories.TripRepository;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,7 +25,13 @@ public class TripService {
     }
 
     public List<Trip> allAvailableTrips() {
-        return tripRepository.findAll();
+        List<Trip> availableTrips = new ArrayList<>();
+        for (Trip trip : tripRepository.findAll()) {
+            if (trip.getAvailableTickets() > 0) {
+                availableTrips.add(trip);
+            }
+        }
+        return availableTrips;
     }
 
     public Trip findTripById(long id) {
@@ -37,27 +45,45 @@ public class TripService {
 
     public Trip create(Trip tripInfo) {
 
-        if (tripInfo.getPricePerWeek() != 0 && tripInfo.getPricePerWeek() > 0 &&
-                tripInfo.getHotelName() != null && !tripInfo.getHotelName().isEmpty() &&
-                tripInfo.getCountry() != null && !tripInfo.getCountry().isEmpty() &&
-                tripInfo.getCity() != null && !tripInfo.getCity().isEmpty()) {
+        if (tripInfo.getPricePerWeek() != 0 && tripInfo.getPricePerWeek() > 0) {
+            if (tripInfo.getHotelName() != null && !tripInfo.getHotelName().isEmpty()) {
+                if (tripInfo.getCountry() != null && !tripInfo.getCountry().isEmpty()) {
+                    if (tripInfo.getCity() != null && !tripInfo.getCity().isEmpty()) {
+                        if (tripInfo.getAvailableTickets() != 0 && tripInfo.getAvailableTickets() > 0) {
 
-            Trip trip = new Trip(tripInfo.getPricePerWeek(), tripInfo.getHotelName(), tripInfo.getCountry(), tripInfo.getCity());
-            tripRepository.save(trip);
+                            Trip trip = new Trip(tripInfo.getPricePerWeek(), tripInfo.getHotelName(), tripInfo.getCountry(), tripInfo.getCity(), tripInfo.getAvailableTickets());
+                            tripRepository.save(trip);
 
-            // Create Trip Item
-            tripItemService.create(trip);
+                            // Create Trip Item
+                            tripItemService.create(trip);
 
-            logger.info("\nAdmin added a new destination.\n" +
-                    "Hotel: " + tripInfo.getHotelName() + ".\n" +
-                    "Country: " + tripInfo.getCountry() + ".\n" +
-                    "City: " + tripInfo.getCity() + ".\n");
+                            logger.info("\nAdmin added a new destination.\n" +
+                                    "Hotel: " + trip.getHotelName() + ".\n" +
+                                    "Country: " + trip.getCountry() + ".\n" +
+                                    "City: " + trip.getCity() + ".\n" +
+                                    "Available tickets: " + trip.getAvailableTickets() + ".\n");
 
-            return trip;
+                            return trip;
+                        } else {
+                            logger.error("\nERROR: Admin tried to add new destination. Missed to fill in available tickets.\n");
+                            throw new TravelException("ERROR: Failed to add new destination. Missed to fill in ''availableTickets'': X");
+                        }
+                    } else {
+                        logger.error("\nERROR: Admin tried to add new destination. Missed to fill in city.\n");
+                        throw new TravelException("ERROR: Failed to add new destination. Missed to fill in ''city'': X");
+                    }
+                } else {
+                    logger.error("\nERROR: Admin tried to add new destination. Missed to fill in country.\n");
+                    throw new TravelException("ERROR: Failed to add new destination. Missed to fill in ''country'': X");
+                }
+            } else {
+                logger.error("\nERROR: Admin tried to add new destination. Missed to fill in name of hotel.\n");
+                throw new TravelException("ERROR: Failed to add new destination. Missed to fill in ''hotelName'': X");
+            }
         } else {
-            // ERROR: Price per week, hotelname, country or city was 0, empty or null
-            logger.error("\nERROR: Admin tried to add a new destination. Either name of Hotel, Country or City was not filled in.\n");
-            return null;
+            // ERROR: Price per week, hotelname, country, city or availableticket was 0, empty or null
+            logger.error("\nERROR: Admin tried to add a new destination. Missed to fill in price per week.\n");
+            throw new TravelException("ERROR: Failed to add new destination. Missed to fill in ''pricePerWeek'': X");
         }
     }
 
@@ -82,7 +108,11 @@ public class TripService {
             }
             if (newTripInfo.getCity() != null && !newTripInfo.getCity().isEmpty() && !newTripInfo.getCity().equals(existingTrip.getCity())) {
                 existingTrip.setCity(newTripInfo.getCity());
-                changes.append("Changed City to: " + newTripInfo.getCity());
+                changes.append("Changed City to: " + newTripInfo.getCity() + ".\n");
+            }
+            if (newTripInfo.getAvailableTickets() != 0 && newTripInfo.getAvailableTickets() != existingTrip.getAvailableTickets()) {
+                existingTrip.setAvailableTickets(newTripInfo.getAvailableTickets());
+                changes.append("Changed Available tickets to: " + newTripInfo.getAvailableTickets());
             }
 
             tripRepository.save(existingTrip);
@@ -97,12 +127,16 @@ public class TripService {
             // ERROR: Trip with provided ID does not exist;
             logger.error("\nERROR: Admin tried to update Trip ID: " + id + " but Trip with provided ID does not exist.\n" +
                     "Provided Trip ID: " + id + ".\n");
-            return null;
+            throw new TravelException("ERROR: Trip with provided ID does not exist.\n" +
+                    "Provided Trip ID: " + id);
         }
     }
 
     public void delete(long id) {
         tripRepository.deleteById(id);
+    }
 
+    public void saveOrUpdate(Trip trip) {
+        tripRepository.save(trip);
     }
 }
