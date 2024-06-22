@@ -75,7 +75,7 @@ public class BookingService {
 
                         ResponseTemplateVO vo = new ResponseTemplateVO();
 
-                        Currency totalCost = restTemplate.getForObject("http://currency:5050/api/v1/currency/" + costPerWeek, Currency.class);
+                        Currency totalCost = restTemplate.getForObject("http://WIGELL-CURRENCY/api/v1/" + costPerWeek, Currency.class);
 
                         vo.setBooking(booking);
                         vo.setTotalCost(totalCost);
