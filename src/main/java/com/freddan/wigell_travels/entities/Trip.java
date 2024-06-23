@@ -3,7 +3,7 @@ package com.freddan.wigell_travels.entities;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "trips")
+@Table(name = "travel_trips")
 public class Trip {
 
     @Id

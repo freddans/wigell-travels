@@ -3,7 +3,7 @@ package com.freddan.wigell_travels.entities;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "customers")
+@Table(name = "travel_customers")
 public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
