@@ -39,20 +39,6 @@ public class BookingItemService {
         return optionalBookingItem.orElse(null);
     }
 
-//    public void create(Booking booking) {
-//        TripItem trip = tripItemService.findTripItemById(booking.getTrip().getId());
-//
-//        if (trip != null) {
-//
-//            BookingItem bookingItem = new BookingItem(booking.getId(), booking.getDepartureDate(), trip, booking.getCustomer(), booking.getTickets());
-//            bookingItemRepository.save(bookingItem);
-//
-//
-//        } else {
-//            // ERROR: TripItem ID does not exist.
-//        }
-//    }
-
     public void create(Booking booking) {
         TripItem trip = tripItemService.findTripItemById(booking.getTrip().getId());
 

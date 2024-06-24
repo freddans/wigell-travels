@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS travel_bookingitems (
 
 INSERT INTO travel_customers (username, first_name, last_name, address)
 VALUES
-    ('Freddan', 'Fredrik', 'Lundell', 'Stensturegatan 28'),
+    ('Freddan', 'Fredrik', 'Lundell', 'Prästgårdsängen 8'),
     ('Sly', 'Sylvester', 'Stallone', 'Amerikanskagatan 2'),
     ('Iron Mike', 'Mike', 'Tyson', 'Amerikanskagatan 3'),
     ('Mackan', 'Marcus', 'Andersson', 'Smörgåsbordet 35');

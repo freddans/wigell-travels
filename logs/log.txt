@@ -1,3 +1,0 @@
-2024-06-21 19:57:22,874 * INFO * com.freddan.wigell_travels.services.BookingService * createBooking * 
-Customer Mike 'Iron Mike' Tyson booked a trip to Lisbon, Portugal.
-
